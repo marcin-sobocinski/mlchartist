@@ -1,3 +1,6 @@
+# -*- coding: UTF-8 -*-
+
+
 """
 Preprocessing Function Librairy
 """
@@ -29,10 +32,15 @@ def proper_name(col):
 def proper_col(df):
     """
     Clean column '<TITLE>' to 'title'
+    Remove '.US' from ticker col
     """
     proper_df = pd.DataFrame()
+
     for col in list(df):
         proper_col = proper_name(col)
         proper_df[proper_col] = df[col]
+
+    proper_df = proper_df["ticker"].apply(lambda x: x.replace('.US', ''))
     return proper_df
+
 
