@@ -15,7 +15,7 @@ def to_date(df, date_column):
     """
     Convert int of dated_col to to datetime object
     """
-    dated_col = pd.to_datetime(df[date_column], format=(%Y%m%d))                #Use directly the right column as arg?
+    dated_col = pd.to_datetime(df[date_column], format=('%Y%m%d'))                #Use directly the right column as arg?
     return dated_col
 
 
