@@ -109,5 +109,3 @@ def get_indicators(df):
 
 
 
-
-
