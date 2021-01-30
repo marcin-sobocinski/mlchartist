@@ -128,6 +128,7 @@ def returns_classification(return_column, returns_threshold):
 
 
 
+
 ## Ian's window function
 def window_dataframe(df, window=30, stride_size=5, target=['5TD_return'], feature_cols=['RSI', 'Stochastic', 'Stochastic_signal', 
         'ADI', 'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal']):
