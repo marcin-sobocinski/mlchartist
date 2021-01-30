@@ -13,6 +13,7 @@ from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volume import AccDistIndexIndicator, OnBalanceVolumeIndicator
 from ta.volatility import AverageTrueRange
 from ta.trend import ADXIndicator, MACD
+from sklearn.preprocessing import StandardScaler
 
 # Column names cleaning
 def to_date(df, date_column):
@@ -99,13 +100,45 @@ def get_indicators(df):
     return feature_df
 
 
+def train_test_split(df, test_set_size):
+    """
+    Split the preprocessed stock data file into a train and test dataset
+    INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
+    OUTPUT: returns a train_set and test_set dataframe, index is set to the date
+    
+    EXAMPLE: train_set, test_set = train_test_split(input_df, '3Y')  --> puts last 3 years in test_set
+    """
+    if not np.issubdtype(df['date'].dtype, np.datetime64):
+        df['date'] = pd.to_datetime(df['date'], format=('%Y-%m-%d'))
+    test_set = df.sort_values(by="date",ascending=True).set_index("date").last(test_set_size)
+    train_set = df.drop(df.tail(len(test_set)).index).set_index("date")
+    test_set.reset_index(inplace=True)
+    train_set.reset_index(inplace=True)
+    return train_set, test_set
 
 
+def returns_classification(return_column, returns_threshold):
+    """
+    Classify the returns versus a defined threshold, and returning either a 1 or 0
+    INPUT: the dataframes column, and return threshold
+    OUTPUT: returns a column with 1/0 binary classification 
+    
+    EXAMPLE: train_set['5TD_return_B'] = returns_classification(train_set['5TD_return'], 0.0006)
+    """
+    return (return_column > returns_threshold).astype(np.int)
 
 
-
-
-
+def std_scaler(df):
+    """
+    Scale the data with SKlearn StandardScaler
+    """
+    scaler = StandardScaler()
+    col_to_scale_df = df.drop(columns=['ticker', 'date', '5TD_return', '10TD_return', '20TD_return'])
+    col_to_scale = list(col_to_scale_df)
+    scaled_df = df
+    for col in col_to_scale:
+        scaled_df[col] = scaler.fit_transform(scaled_df[[col]])
+    return scaled_df, scaler
 
 
 
