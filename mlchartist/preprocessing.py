@@ -13,6 +13,7 @@ from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volume import AccDistIndexIndicator, OnBalanceVolumeIndicator
 from ta.volatility import AverageTrueRange
 from ta.trend import ADXIndicator, MACD
+from sklearn.preprocessing import StandardScaler
 
 # Column names cleaning
 def to_date(df, date_column):
@@ -127,46 +128,17 @@ def returns_classification(return_column, returns_threshold):
     return (return_column > returns_threshold).astype(np.int)
 
 
+def std_scaler(df):
+    """
+    Scale the data with SKlearn StandardScaler
+    """
+    scaler = StandardScaler()
+    col_to_scale_df = df.drop(columns=['ticker', 'date', '5TD_return', '10TD_return', '20TD_return'])
+    col_to_scale = list(col_to_scale_df)
+    scaled_df = df
+    for col in col_to_scale:
+        scaled_df[col] = scaler.fit_transform(scaled_df[[col]])
+    return scaled_df, scaler
 
 
-## Ian's window function
-def window_dataframe(df, window=30, stride_size=5, target=['5TD_return'], feature_cols=['RSI', 'Stochastic', 'Stochastic_signal', 
-        'ADI', 'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal']):
-    """
-    Turns the input dataframe into an array of windowed arrays
-    INPUT: the input dataframe, window size, stride size, target column, feature columns
-    OUTPUT: array of windowed arrays 
-    
-    EXAMPLE: windowed_array = window_dataframe(train_set)
-    """
-    if not np.issubdtype(df['date'].dtype, np.datetime64):
-        df['date'] = pd.to_datetime(df['date'], format=('%Y-%m-%d'))
-    inverse_df = df.sort_values(by="date", ascending=False)
-    feature_array = []
-    target_array = []
-    for column in inverse_df:
-        if column in feature_cols: 
-            feature_array.append(window_column(inverse_df[column], window, stride_size))
-            
-        elif column in target:
-            target_array.append(window_column(inverse_df[column], window, stride_size))
-            
-    
-    return np.array(feature_array), np.array(target_array)
-
-
-## this function is called in window_dataframe function
-def window_column(df_series, window_size=30, stride_size=5):
-    """
-    Turns data series into array of windowed arrays
-    INPUT: the input data series, window size, stride size
-    OUTPUT: array of windowed arrays 
-    
-    EXAMPLE: y = window_column(train_set['RSI'], 30, 5)
-    """
-    np_array = df_series.to_numpy()
-    nrows = ((np_array.size-window_size)//stride_size)+1
-    n = np_array.strides[0]
-    return np.lib.stride_tricks.as_strided(
-        np_array, shape=(nrows, window_size), strides=(stride_size*n, n))
 
