@@ -7,7 +7,7 @@ Transforming raw data files into set of csv's with all features calculated
 
 import pandas as pd
 import numpy as np
-from mlchartist.preprocessing import to_date, proper_name, proper_col, calculate_real_returns, get_indicators
+from mlchartist.preprocessing import to_date, proper_name, proper_col, calculate_real_returns, get_indicators, calculate_past_returns
 import os
 
 def transform_file(filename):
