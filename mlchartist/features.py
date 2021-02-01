@@ -22,6 +22,7 @@ def transform_file(filename):
     df.drop(columns=['per', 'time', 'openint'], inplace=True)
     df = get_indicators(df)
     df_final = calculate_real_returns(df)
+    df_final = calculate_past_returns(df_final)
     df_final = df_final.dropna().drop(columns = ['open', 'high','low','close', 'vol']).reset_index(drop=True)
     return df_final
 
