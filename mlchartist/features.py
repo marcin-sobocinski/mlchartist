@@ -1,13 +1,14 @@
 # -*- coding: UTF-8 -*-
 
-import pandas as pd
-import numpy as np
-from mlchartist.preprocessing import to_date, proper_name, proper_col, calculate_real_returns, get_indicators
-import os
 
 """
 Transforming raw data files into set of csv's with all features calculated
 """
+
+import pandas as pd
+import numpy as np
+from mlchartist.preprocessing import to_date, proper_name, proper_col, calculate_real_returns, get_indicators, calculate_past_returns
+import os
 
 def transform_file(filename):
     """
@@ -21,6 +22,7 @@ def transform_file(filename):
     df.drop(columns=['per', 'time', 'openint'], inplace=True)
     df = get_indicators(df)
     df_final = calculate_real_returns(df)
+    df_final = calculate_past_returns(df_final)
     df_final = df_final.dropna().drop(columns = ['open', 'high','low','close', 'vol']).reset_index(drop=True)
     return df_final
 
