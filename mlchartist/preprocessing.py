@@ -99,6 +99,19 @@ def get_indicators(df):
     feature_df['MACD_signal'] = MACD(close=df[CLOSE]).macd_signal()
     return feature_df
 
+def calculate_past_returns(df):
+    """
+       Calculate Past Returns for 1, 5 & 10 Trading Days
+       INPUT: Assumes the headers have been changed. Example: '<CLOSE>' is 'close'
+    """
+    returns_df = df.copy()
+    ## 5 Trading Day Past Returns
+    returns_df['1D_past_return'] = (df['close']/df['close'].shift(1))-1
+    ## 10 Trading Day Past Returns
+    returns_df['5D_past_return'] = (df['close']/df['close'].shift(5))-1
+    ## 20 Trading Day Past Returns
+    returns_df['10D_past_return'] = (df['close']/df['close'].shift(10))-1
+    return returns_df
 
 def train_test_split(df, test_set_size):
     """
@@ -115,7 +128,6 @@ def train_test_split(df, test_set_size):
     test_set.reset_index(inplace=True)
     train_set.reset_index(inplace=True)
     return train_set, test_set
-
 
 def returns_classification(return_column, returns_threshold):
     """
