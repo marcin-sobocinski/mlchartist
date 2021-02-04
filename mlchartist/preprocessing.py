@@ -169,7 +169,7 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
     """
     wk_df = df.copy()
 
-    elif same_thresholds:
+    if same_thresholds:
         r10d = r5d * 2
         r20d = r10d * 2
 
