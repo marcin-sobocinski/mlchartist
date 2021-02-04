@@ -169,7 +169,7 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
     """
     wk_df = df.copy()
 
-    if all(['5TD_return','10TD_return','20TD_return']) not in list(df):
+    if any(['5TD_return','10TD_return','20TD_return']) not in list(df):
         print('Missing return columns')
 
     elif same_thresholds:
