@@ -82,8 +82,6 @@ def window_column(df_series, window_size=30, stride_size=5):
     return np.lib.stride_tricks.as_strided(
         np_array, shape=(nrows, window_size), strides=(stride_size*n, n))
 
-import random
-
 
 def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
        'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff',
