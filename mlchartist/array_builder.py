@@ -83,7 +83,7 @@ def window_column(df_series, window_size=30, stride_size=5):
         np_array, shape=(nrows, window_size), strides=(stride_size*n, n))
 
 
-def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
+def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, outlier_threshold=1, input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
        'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff',
        'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return'], target_col=['1D_past_return', '5D_past_return', '10D_past_return'], 
         outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100], 'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}):
@@ -120,7 +120,7 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, i
     for i in range(int(max_num_windows)):
         r=random.randint(time_window, len(df)- time_window)
         if r not in random_index: random_index.append(r)
-    
+    outlier_count = 0
     for window_start in random_index:
         outlier = False
         df_slice = df_sorted.iloc[window_start: window_start + time_window]
@@ -128,8 +128,10 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, i
             for k, v in outlier_validation.items(): 
                 if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
         if df_slice.shape[0]==time_window and outlier==False:
+            if outlier_count/max_num_windows >= outlier_threshold:
+                return np.array([]), np.array([])
             input_array.append(np.array(df_slice[input_cols].values))
             target_array.append(np.array(df_slice[target_col].values))
-    
+        else: outlier_count+=1  
     return np.array(input_array), np.array(target_array)
 
