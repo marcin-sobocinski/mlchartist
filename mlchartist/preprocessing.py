@@ -118,7 +118,7 @@ def train_test_split(df, test_set_size):
     Split the preprocessed stock data file into a train and test dataset
     INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
     OUTPUT: returns a train_set and test_set dataframe, index is set to the date
-    
+
     EXAMPLE: train_set, test_set = train_test_split(input_df, '3Y')  --> puts last 3 years in test_set
     """
     if not np.issubdtype(df['date'].dtype, np.datetime64):
@@ -133,8 +133,8 @@ def returns_classification(return_column, returns_threshold):
     """
     Classify the returns versus a defined threshold, and returning either a 1 or 0
     INPUT: the dataframes column, and return threshold
-    OUTPUT: returns a column with 1/0 binary classification 
-    
+    OUTPUT: returns a column with 1/0 binary classification
+
     EXAMPLE: train_set['5TD_return_B'] = returns_classification(train_set['5TD_return'], 0.0006)
     """
     return (return_column > returns_threshold).astype(np.int)
@@ -153,4 +153,29 @@ def std_scaler(df):
     return scaled_df, scaler
 
 
+def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=0.0024):
+    """
+    Binary encode the 5, 10 and 20 days return columns according to the thresholds
+
+    INPUT: dataframe with '5TD_return', '10TD_return' and '20TD_return' columns
+    OUTPUT: dataframe with binary encoded aforementionned columns
+
+    If the thresolds returns are the same on a yearly basis for the different period use:
+                r10d = r5d * 2
+            and
+                r20d = r10d * 2
+            keep same_thresholds=True
+        Otherwise, define manually r10d and r20d
+    """
+    wk_df = df.copy()
+
+    if same_thresholds:
+        r10d = r5d * 2
+        r20d = r10d * 2
+
+    wk_df['5TD_return'] = wk_df['5TD_return'].apply(lambda x: 1 if x > r5d else 0)
+    wk_df['10TD_return'] = wk_df['10TD_return'].apply(lambda x: 1 if x > r10d else 0)
+    wk_df['20TD_return'] = wk_df['20TD_return'].apply(lambda x: 1 if x > r20d else 0)
+
+    return wk_df
 
