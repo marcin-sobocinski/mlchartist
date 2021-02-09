@@ -154,9 +154,9 @@ def full_dataset_randomised_arrays_(df,
                                          check_test_outliers=False, 
                                          outlier_threshold=1, 
                                          input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX', 
-                                                     'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '1D_past_return', 
-                                                     '5D_past_return', '10D_past_return'], 
-                                         target_col=['1D_past_return', '5D_past_return', '10D_past_return'], 
+                                                     'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '5TD_return', 
+                                                     '10TD_return', '20TD_return'], 
+                                         target_col=['5TD_return', '10TD_return', '20TD_return'], 
                                          outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100], 
                                                              'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}):
     """
