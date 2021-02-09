@@ -238,7 +238,7 @@ def full_dataset_randomised_arrays_(df,
                 df_slice.loc[:, input_cols] = scaler.transform(df_slice[input_cols])
                 ## add to company array
                 company_train_x_array.append(np.array(df_slice[input_cols].values))
-                company_train_y_array.append(np.array(df_slice[target_col].values))
+                company_train_y_array.append(np.array(df_slice[target_col].iloc[0]))
             else: train_outlier_count+=1
         
         if train_outlier_count/(len(company_train_sorted)/stride) <= outlier_threshold:
@@ -266,7 +266,7 @@ def full_dataset_randomised_arrays_(df,
                 df_slice.loc[:, input_cols] = scaler.transform(df_slice[input_cols])
                 ## add to company array
                 company_test_x_array.append(np.array(df_slice[input_cols].values))
-                company_test_y_array.append(np.array(df_slice[target_col].values))
+                company_test_y_array.append(np.array(df_slice[target_col].iloc[0]))
             else: test_outlier_count+=1
         
         if train_outlier_count/(len(company_train_sorted)/stride) <= outlier_threshold:
