@@ -6,6 +6,8 @@ Generates input and output arrays out of single dataframe with input and target 
 import pandas as pd
 import numpy as np
 import random
+from mlchartist.preprocessing import train_test_split
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 def build_arrays(df, time_window=5, stride=3, input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
        'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff',
@@ -134,4 +136,150 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, o
             target_array.append(np.array(df_slice[target_col].values))
         else: outlier_count+=1  
     return np.array(input_array), np.array(target_array)
+
+from mlchartist.preprocessing import train_test_split
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+
+def full_dataset_randomised_arrays(df, 
+                                test_set_size='3Y', 
+                                time_window=5, 
+                                stride=3, 
+                                check_train_outliers=False, 
+                                check_test_outliers=False, 
+                                outlier_threshold=1, 
+                                input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX', 
+                                            'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '1D_past_return', 
+                                            '5D_past_return', '10D_past_return'], 
+                                target_col=['1D_past_return', '5D_past_return', '10D_past_return'], 
+                                outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100], 
+                                                             'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}):
+    """
+    A function to transform dataframe into input and output arrays.
+
+    Takes:
+    df - input dataframe
+    time_window (default=5) - time series length
+    stride (default=3) - controls the number of windows taken (i.e. max_num_windows = len(df)/strides)
+    check_outliers (default=False) - controls whether it checks each window for outliers or not
+    input_cols (default = 'RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
+       'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff',
+       'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return']) - all input features, that should 
+       be included in the input array target_col (default = '5TD_return') - target variable, first 
+       (newest) value for each input array
+    target_col - all columns that should be included in target_col
+        (default: target_col=['1D_past_return', '5D_past_return', '10D_past_return'])
+    outlier_validation - a dict that sets the outlier checks to be completed. Enter data in the format:
+        outlier_validation={'column_name': [lower_threshold, upper_threshold]} 
+        Example: {'Stochastic': [0, 100], 'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}
+
+    Return tuple (input_array, target_array).
+
+    input_array dim: (number_of_samples x time_window x features_number)
+    target_array dim: (number_of_samples x time_window x returns_numbder)
+    """
+    
+    ## split into train/test split
+    raw_train_set = pd.DataFrame()
+    raw_test_set = pd.DataFrame()
+    for ticker in df['ticker'].unique():
+        company_df = df[df['ticker'] == ticker]
+        temp_train_set, temp_test_set = train_test_split(company_df, test_set_size)
+        raw_train_set = raw_train_set.append(temp_train_set)
+        raw_test_set = raw_test_set.append(temp_test_set)
+        
+    ## create copy of train_set & fit scaler
+    no_outlier_train_df = raw_train_set.copy()
+    for k, v in outlier_validation.items(): 
+        no_outlier_train_df = no_outlier_train_df[no_outlier_train_df[k].between(v[0], v[1])]
+    scaler = RobustScaler()
+    scaler.fit(no_outlier_train_df[input_cols])
+    
+    train_x = []
+    train_y = []
+    test_x = []
+    test_y = []
+    stats2 = []
+    stats = {}
+    ## go company by company
+    print(f"{df['ticker'].unique().size} Companies in Dataset")
+    status_count = 0
+    for ticker in df['ticker'].unique():
+        status_count +=1
+        stats[ticker] = {}
+        print(f"Starting {ticker}: Company {status_count} of {df['ticker'].unique().size}")
+        train_outlier_count = 0
+        test_outlier_count = 0
+        company_train_x_array = []
+        company_train_y_array = []
+        
+        company_test_x_array = []
+        company_test_y_array = []
+
+        ## train
+        company_train_df = raw_train_set[raw_train_set['ticker'] == ticker]
+        company_train_sorted = company_train_df.sort_values('date', ascending=False)
+        company_train_sorted.reset_index(drop=True, inplace=True)
+        for row in range(0, len(company_train_sorted), stride):
+            outlier = False
+            df_slice = company_train_sorted.iloc[row: row + time_window].copy()
+            ## check for outliers
+            if check_train_outliers == True:
+                for k, v in outlier_validation.items(): 
+                    if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
+                
+            if df_slice.shape[0]==time_window and outlier==False:
+                ## scale the window
+                df_slice.loc[:, input_cols] = scaler.transform(df_slice[input_cols])
+                ## add to company array
+                company_train_x_array.append(np.array(df_slice[input_cols].values))
+                company_train_y_array.append(np.array(df_slice[target_col].values))
+            else: train_outlier_count+=1
+        
+        if train_outlier_count/(len(company_train_sorted)/stride) <= outlier_threshold:
+            stats[ticker]['train_possible_windows'] = (len(company_train_sorted)/stride)
+            stats[ticker]['train_outliers'] = train_outlier_count
+            stats[ticker]['train_windows'] = len(company_train_x_array)
+
+            random.shuffle(company_train_x_array)
+            random.shuffle(company_train_y_array)
+            train_x.extend(company_train_x_array)
+            train_y.extend(company_train_y_array)
+            
+        ## test
+        company_test_df = raw_test_set[raw_test_set['ticker'] == ticker]
+        company_test_sorted = company_test_df.sort_values('date', ascending=False)
+        company_test_sorted.reset_index(drop=True, inplace=True)
+        for row in range(0, len(company_test_sorted), stride):
+            outlier = False
+            df_slice = company_test_sorted.iloc[row: row + time_window].copy()
+            ## check for outliers
+            if check_test_outliers == True:
+                for k, v in outlier_validation.items(): 
+                    if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
+                
+            if df_slice.shape[0]==time_window and outlier==False:
+                ## scale the window
+                df_slice.loc[:, input_cols] = scaler.transform(df_slice[input_cols])
+                ## add to company array
+                company_test_x_array.append(np.array(df_slice[input_cols].values))
+                company_test_y_array.append(np.array(df_slice[target_col].values))
+            else: test_outlier_count+=1
+        
+        if train_outlier_count/(len(company_train_sorted)/stride) <= outlier_threshold:
+            stats[ticker]['test_possible_windows'] = (len(company_test_sorted)/stride)
+            stats[ticker]['test_outliers'] = test_outlier_count
+            stats[ticker]['test_windows'] = len(company_test_x_array)
+            random.shuffle(company_test_y_array)
+            random.shuffle(company_test_y_array)
+            test_x.extend(company_test_x_array)
+            test_y.extend(company_test_y_array)
+    
+    print('All Companies Completed')
+    print('')
+    print('Processing Stats:', stats)
+    random.shuffle(train_x)
+    random.shuffle(train_y)
+    random.shuffle(test_x)
+    random.shuffle(test_y)
+    return np.array(train_x), np.array(train_y), np.array(test_x), np.array(test_y), scaler
 
