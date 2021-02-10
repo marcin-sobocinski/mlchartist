@@ -23,6 +23,7 @@ def transform_file(filename):
     df = get_indicators(df)
     df_final = calculate_real_returns(df)
     df_final = calculate_past_returns(df_final)
+    df_final = df_final.sort_values(by='date', ascending=False)
     df_final = df_final.dropna().drop(columns = ['open', 'high','low','close', 'vol']).reset_index(drop=True)
     return df_final
 
@@ -50,7 +51,7 @@ def build_data(raw_data_folder=r'../raw_data/data/daily/us/nasdaq stocks/', dest
                         rows_num = sum(1 for line in f)
                         if rows_num >= len_hist:
                             df = transform_file(filepath)
-                            new_name = filename.rstrip('.us.txt') + '.csv'
+                            new_name = filename[:-7] + '.csv'
                             targetpath = destination_path + os.sep + new_name
                             save_ticker(df, targetpath)
                             files_changed += 1
