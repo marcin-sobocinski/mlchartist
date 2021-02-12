@@ -13,7 +13,7 @@ from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.volume import AccDistIndexIndicator, OnBalanceVolumeIndicator
 from ta.volatility import AverageTrueRange
 from ta.trend import ADXIndicator, MACD
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 # Column names cleaning
 def to_date(df, date_column):
@@ -113,7 +113,7 @@ def calculate_past_returns(df):
     returns_df['10D_past_return'] = (df['close']/df['close'].shift(10))-1
     return returns_df
 
-def train_test_split(df, test_set_size):
+def train_test_split(input_df, test_set_size):
     """
     Split the preprocessed stock data file into a train and test dataset
     INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
@@ -121,6 +121,7 @@ def train_test_split(df, test_set_size):
 
     EXAMPLE: train_set, test_set = train_test_split(input_df, '3Y')  --> puts last 3 years in test_set
     """
+    df = input_df.copy()
     if not np.issubdtype(df['date'].dtype, np.datetime64):
         df['date'] = pd.to_datetime(df['date'], format=('%Y-%m-%d'))
     test_set = df.sort_values(by="date",ascending=True).set_index("date").last(test_set_size)
@@ -179,3 +180,37 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
 
     return wk_df
 
+def fit_train_scaler(train_df, 
+                    outlier_validation={'5TD_return': [-0.5, 0.5]},
+                    input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX', 
+                                    'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '5TD_return', 
+                                    '10TD_return', '20TD_return']):
+    """
+    Fits Robust Scaler on train set and returns the scaler
+    INPUT: the dataframe to used to fit scaler, the outlier_validation thresholds, the columns for the scaler to be
+            applied too.
+    OUTPUT: fitted scaler
+    """
+    no_outlier_train_df = train_df.copy()
+    for k, v in outlier_validation.items(): 
+        no_outlier_train_df = no_outlier_train_df[no_outlier_train_df[k].between(v[0], v[1])]
+    scaler = RobustScaler()
+    scaler.fit(no_outlier_train_df[input_cols])
+    return scaler
+
+def train_test_split_multiple_companies(df, test_set_size):
+    """
+    Split the preprocessed stock data of multiple companies into a train and test dataset
+    INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
+    OUTPUT: returns a train_set and test_set dataframe, index is set to the date
+
+    EXAMPLE: train_set, test_set = train_test_split_multiple_companies(input_df, '3Y')  --> puts last 3 years in test_set
+    """
+    train_set = pd.DataFrame()
+    test_set = pd.DataFrame()
+    for ticker in df['ticker'].unique():
+        company_df = df[df['ticker'] == ticker]
+        temp_train_set, temp_test_set = train_test_split(company_df, test_set_size)
+        train_set = train_set.append(temp_train_set)
+        test_set = test_set.append(temp_test_set)
+    return train_set, test_set

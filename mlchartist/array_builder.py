@@ -6,7 +6,7 @@ Generates input and output arrays out of single dataframe with input and target 
 import pandas as pd
 import numpy as np
 import random
-from mlchartist.preprocessing import train_test_split
+from mlchartist.preprocessing import train_test_split, fit_train_scaler, train_test_split_multiple_companies
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 def build_arrays(df, time_window=5, stride=3, input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
@@ -146,10 +146,14 @@ import random
 import pandas as pd
 import numpy as np
 
-def full_dataset_randomised_arrays_(df, 
+def full_dataset_randomised_arrays(unsplit_df=None,
+                                       train_df=None,
+                                       test_df=None,
+                                       split_dataframe=True,
                                          test_set_size='3Y', 
                                          time_window=5, 
                                          stride=3, 
+                                         fitted_scaler=None,
                                          check_train_outliers=False, 
                                          check_test_outliers=False, 
                                          outlier_threshold=1, 
@@ -158,12 +162,17 @@ def full_dataset_randomised_arrays_(df,
                                                      '10TD_return', '20TD_return'], 
                                          target_col=['5TD_return', '10TD_return', '20TD_return'], 
                                          outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100], 
-                                                             'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}):
+                                                             'Stochastic_signal': [-10, 110], '5TD_return': [-0.5, 0.5]}):
     """
     A function to transform dataframe into input and output arrays.
 
     Takes:
-    df - input dataframe
+    unsplit_df - unsplit dataframe that will be split into test/train
+    train_df - pre-split training dataframe
+    test_df - pre-split test dataframe
+    split_dataframe - boolean to tell the function to split the unsplit dataframe into test/train or not. 
+        Use with holdout data.
+    fitted_scaler - give the function a prefitted scaler that it will use on the data.
     time_window (default=5) - time series length
     stride (default=3) - controls the number of windows taken (i.e. max_num_windows = len(df)/strides)
     check_outliers (default=False) - controls whether it checks each window for outliers or not
@@ -184,21 +193,36 @@ def full_dataset_randomised_arrays_(df,
     target_array dim: (number_of_samples x time_window x returns_numbder)
     """
     
-    ## split into train/test split
-    raw_train_set = pd.DataFrame()
-    raw_test_set = pd.DataFrame()
-    for ticker in df['ticker'].unique():
-        company_df = df[df['ticker'] == ticker]
-        temp_train_set, temp_test_set = train_test_split(company_df, test_set_size)
-        raw_train_set = raw_train_set.append(temp_train_set)
-        raw_test_set = raw_test_set.append(temp_test_set)
+    ## check to see if unsplit or train/test split dataframes provided
+    if unsplit_df is not None:
+        df = unsplit_df.copy()
+        if split_dataframe == True: 
+            print('Train/Test Split: Splitting unsplit dataframe')
+            train_set, test_set = train_test_split_multiple_companies(unsplit_df, '3Y')
+        else:
+            print('Train/Test Split: Not splitting dataframe. (Holdout Data)')
+            train_set= df
+    elif (train_df is not None) and (test_df is not None):
+        print('Train/Test Split: Using provided train/test split dataframe')
+        df = train_df.copy()
+        train_set = train_df.copy()
+        test_set = test_df.copy()  
+    else:
+        print('''
+        Please enter valid input dataframes. Either: 
+        --> Enter a unsplit dataframe (unsplit_df=df), or 
+        --> Enter pre-split train and test dataframes (train_df=train and test_df=test)
+        ''')
+        return None, None, None, None, None
         
-    ## create copy of train_set & fit scaler
-    no_outlier_train_df = raw_train_set.copy()
-    for k, v in outlier_validation.items(): 
-        no_outlier_train_df = no_outlier_train_df[no_outlier_train_df[k].between(v[0], v[1])]
-    scaler = RobustScaler()
-    scaler.fit(no_outlier_train_df[input_cols])
+    
+    ## check to see if fitted scaler provided
+    if fitted_scaler == None:
+        print('Scaler: Fitting scaler on train set')
+        scaler = fit_train_scaler(train_set, outlier_validation=outlier_validation, input_cols=input_cols)
+    else:
+        print('Scaler: Using provided fitted_scaler')
+        scaler = fitted_scaler
     
     train_x = []
     train_y = []
@@ -222,7 +246,7 @@ def full_dataset_randomised_arrays_(df,
         company_test_y_array = []
 
         ## train
-        company_train_df = raw_train_set[raw_train_set['ticker'] == ticker]
+        company_train_df = train_set[train_set['ticker'] == ticker]
         company_train_sorted = company_train_df.sort_values('date', ascending=False)
         company_train_sorted.reset_index(drop=True, inplace=True)
         for row in range(0, len(company_train_sorted), stride):
@@ -248,37 +272,38 @@ def full_dataset_randomised_arrays_(df,
             train_x.extend(company_train_x_array)
             train_y.extend(company_train_y_array)
             
-
-        ## test
-        company_test_df = raw_test_set[raw_test_set['ticker'] == ticker]
-        company_test_sorted = company_test_df.sort_values('date', ascending=False)
-        company_test_sorted.reset_index(drop=True, inplace=True)
-        for row in range(0, len(company_test_sorted), stride):
-            outlier = False
-            df_slice = company_test_sorted.iloc[row: row + time_window].copy()
-            ## check for outliers
-            if check_test_outliers == True:
-                for k, v in outlier_validation.items(): 
-                    if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
-                
-            if df_slice.shape[0]==time_window and outlier==False:
-                ## scale the window
-                df_slice.loc[:, input_cols] = scaler.transform(df_slice[input_cols])
-                ## add to company array
-                company_test_x_array.append(np.array(df_slice[input_cols].values))
-                company_test_y_array.append(np.array(df_slice[target_col].iloc[0]))
-            else: test_outlier_count+=1
         
-        if train_outlier_count/(len(company_train_sorted)/stride) <= outlier_threshold:
-            stats[ticker]['test_possible_windows'] = (len(company_test_sorted)/stride)
-            stats[ticker]['test_outliers'] = test_outlier_count
-            stats[ticker]['test_windows'] = len(company_test_x_array)
-            test_x.extend(company_test_x_array)
-            test_y.extend(company_test_y_array)
+        ## test
+        if split_dataframe == True:
+            company_test_df = test_set[test_set['ticker'] == ticker]
+            company_test_sorted = company_test_df.sort_values('date', ascending=False)
+            company_test_sorted.reset_index(drop=True, inplace=True)
+            for row in range(0, len(company_test_sorted), stride):
+                outlier = False
+                df_slice = company_test_sorted.iloc[row: row + time_window].copy()
+                ## check for outliers
+                if check_test_outliers == True:
+                    for k, v in outlier_validation.items(): 
+                        if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
+
+                if df_slice.shape[0]==time_window and outlier==False:
+                    ## scale the window
+                    df_slice.loc[:, input_cols] = scaler.transform(df_slice[input_cols])
+                    ## add to company array
+                    company_test_x_array.append(np.array(df_slice[input_cols].values))
+                    company_test_y_array.append(np.array(df_slice[target_col].iloc[0]))
+                else: test_outlier_count+=1
+
+            if train_outlier_count/(len(company_train_sorted)/stride) <= outlier_threshold:
+                stats[ticker]['test_possible_windows'] = (len(company_test_sorted)/stride)
+                stats[ticker]['test_outliers'] = test_outlier_count
+                stats[ticker]['test_windows'] = len(company_test_x_array)
+                test_x.extend(company_test_x_array)
+                test_y.extend(company_test_y_array)
     
     print('All Companies Completed')
     print('')
-    print('Processing Stats:', stats)
+    ##print('Processing Stats:', stats)
     
     ## shuffle arrays
     output_train_x = []
@@ -287,5 +312,8 @@ def full_dataset_randomised_arrays_(df,
     for i in index_list:
         output_train_x.append(train_x[i])
         output_train_y.append(train_y[i])
-    return np.array(output_train_x), np.array(output_train_y), np.array(test_x), np.array(test_y), scaler
+    if split_dataframe == True:
+        return np.array(output_train_x), np.array(output_train_y), np.array(test_x), np.array(test_y), scaler
+    else:
+        return np.array(output_train_x), np.array(output_train_y), scaler
 
