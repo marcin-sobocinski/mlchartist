@@ -158,8 +158,8 @@ def full_dataset_randomised_arrays(unsplit_df=None,
                                          check_test_outliers=False,
                                          outlier_threshold=1,
                                          input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX',
-                                                     'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '5TD_return',
-                                                     '10TD_return', '20TD_return'],
+                                                     'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '1D_past_return',
+                                                     '5D_past_return', '10D_past_return'],
                                          target_col=['5TD_return', '10TD_return', '20TD_return'],
                                          outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100],
                                                              'Stochastic_signal': [-10, 110], '5TD_return': [-0.5, 0.5]}):
@@ -317,3 +317,41 @@ def full_dataset_randomised_arrays(unsplit_df=None,
     else:
         return np.array(output_train_x), np.array(output_train_y), scaler
 
+
+def generate_test_window(test_df=None,
+                        date=None,
+                        fitted_scaler=None,
+                        time_window=30,
+                        input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX',
+                                    'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '1D_past_return',
+                                    '5D_past_return', '10D_past_return'],
+                        target_col=['5TD_return', '10TD_return', '20TD_return']):
+    """
+    A function to take a dataframe and date, and return a scaled window of the data starting from the input date.
+
+    Takes:
+    test_df - one companies test set
+    date - the date from which you want to build a window from
+    fitted_scaler - the pre-fitted scaler to be used the transform the data
+    time_window - the time window to create
+    input_cols - all input features, that should be included in the input array
+    target_col - all columns that should be included in target_col
+
+    Returns:
+    X_array, y_array
+    """
+    df = test_df.copy()
+    if not np.issubdtype(df['date'].dtype, np.datetime64):
+        df['date'] = pd.to_datetime(df['date'], format=('%Y-%m-%d'))
+    df = df.sort_values(by="date", ascending=False)
+    date_less_than = df[df['date'] <= date]
+    if len(date_less_than) < time_window:
+        print(f'''
+                Window Size Error: The date you have choosen will result in a window size of only {len(date_less_than)} rows.
+                Please choose a date that will return a window at least {time_window} rows.''')
+        return None
+    df_slice = date_less_than.iloc[0: time_window].copy()
+    df_slice.loc[:, input_cols] = fitted_scaler.transform(df_slice[input_cols])
+    X_array = np.array(df_slice[input_cols].values)
+    y_array = np.array(df_slice[target_col].iloc[0])
+    return X_array, y_array
