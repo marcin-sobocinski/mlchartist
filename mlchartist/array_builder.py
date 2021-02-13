@@ -44,13 +44,13 @@ def build_arrays(df, time_window=5, stride=3, input_cols=['RSI', 'Stochastic', '
 
 
 ## Ian's window function
-def window_dataframe(df, window=30, stride_size=5, target=['5TD_return'], feature_cols=['RSI', 'Stochastic', 'Stochastic_signal', 
+def window_dataframe(df, window=30, stride_size=5, target=['5TD_return'], feature_cols=['RSI', 'Stochastic', 'Stochastic_signal',
         'ADI', 'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal']):
     """
     Turns the input dataframe into an array of windowed arrays
     INPUT: the input dataframe, window size, stride size, target column, feature columns
-    OUTPUT: array of windowed arrays 
-    
+    OUTPUT: array of windowed arrays
+
     EXAMPLE: windowed_array = window_dataframe(train_set)
     """
     if not np.issubdtype(df['date'].dtype, np.datetime64):
@@ -59,13 +59,13 @@ def window_dataframe(df, window=30, stride_size=5, target=['5TD_return'], featur
     feature_array = []
     target_array = []
     for column in inverse_df:
-        if column in feature_cols: 
+        if column in feature_cols:
             feature_array.append(window_column(inverse_df[column], window, stride_size))
-            
+
         elif column in target:
             target_array.append(window_column(inverse_df[column], window, stride_size))
-            
-    
+
+
     return np.array(feature_array), np.array(target_array)
 
 
@@ -74,8 +74,8 @@ def window_column(df_series, window_size=30, stride_size=5):
     """
     Turns data series into array of windowed arrays
     INPUT: the input data series, window size, stride size
-    OUTPUT: array of windowed arrays 
-    
+    OUTPUT: array of windowed arrays
+
     EXAMPLE: y = window_column(train_set['RSI'], 30, 5)
     """
     np_array = df_series.to_numpy()
@@ -87,7 +87,7 @@ def window_column(df_series, window_size=30, stride_size=5):
 
 def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, outlier_threshold=1, input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
        'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff',
-       'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return'], target_col=['1D_past_return', '5D_past_return', '10D_past_return'], 
+       'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return'], target_col=['1D_past_return', '5D_past_return', '10D_past_return'],
         outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100], 'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}):
     """
     A function to transform dataframe into input and output arrays.
@@ -99,12 +99,12 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, o
     check_outliers (default=False) - controls whether it checks each window for outliers or not
     input_cols (default = 'RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
        'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff',
-       'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return']) - all input features, that should 
+       'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return']) - all input features, that should
        be included in the input array target_col (default = '5TD_return') - target variable, first (newest) value for each input array
     target_col - all columns that should be included in target_col
         (default: target_col=['1D_past_return', '5D_past_return', '10D_past_return'])
     outlier_validation - a dict that sets the outlier checks to be completed. Enter data in the format:
-        outlier_validation={'column_name': [lower_threshold, upper_threshold]} 
+        outlier_validation={'column_name': [lower_threshold, upper_threshold]}
         Example: {'Stochastic': [0, 100], 'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}
 
     Return tuple (input_array, target_array).
@@ -116,7 +116,7 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, o
     input_array = []
     target_array = []
     df_sorted = df.sort_values('date', ascending=False)
-    df_sorted.reset_index(drop=True, inplace=True)    
+    df_sorted.reset_index(drop=True, inplace=True)
     max_num_windows = len(df)/stride
     random_index = []
     for i in range(int(max_num_windows)):
@@ -127,14 +127,14 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, o
         outlier = False
         df_slice = df_sorted.iloc[window_start: window_start + time_window]
         if check_outliers == True:
-            for k, v in outlier_validation.items(): 
+            for k, v in outlier_validation.items():
                 if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
         if df_slice.shape[0]==time_window and outlier==False:
             if outlier_count/max_num_windows >= outlier_threshold:
                 return np.array([]), np.array([])
             input_array.append(np.array(df_slice[input_cols].values))
             target_array.append(np.array(df_slice[target_col].values))
-        else: outlier_count+=1  
+        else: outlier_count+=1
     return np.array(input_array), np.array(target_array)
 
 from mlchartist.preprocessing import train_test_split
@@ -150,18 +150,18 @@ def full_dataset_randomised_arrays(unsplit_df=None,
                                        train_df=None,
                                        test_df=None,
                                        split_dataframe=True,
-                                         test_set_size='3Y', 
-                                         time_window=5, 
-                                         stride=3, 
+                                         test_set_size='3Y',
+                                         time_window=5,
+                                         stride=3,
                                          fitted_scaler=None,
-                                         check_train_outliers=False, 
-                                         check_test_outliers=False, 
-                                         outlier_threshold=1, 
-                                         input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX', 
-                                                     'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '5TD_return', 
-                                                     '10TD_return', '20TD_return'], 
-                                         target_col=['5TD_return', '10TD_return', '20TD_return'], 
-                                         outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100], 
+                                         check_train_outliers=False,
+                                         check_test_outliers=False,
+                                         outlier_threshold=1,
+                                         input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX',
+                                                     'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '5TD_return',
+                                                     '10TD_return', '20TD_return'],
+                                         target_col=['5TD_return', '10TD_return', '20TD_return'],
+                                         outlier_validation={'ATR': [-100, 100], 'Stochastic': [0, 100],
                                                              'Stochastic_signal': [-10, 110], '5TD_return': [-0.5, 0.5]}):
     """
     A function to transform dataframe into input and output arrays.
@@ -170,7 +170,7 @@ def full_dataset_randomised_arrays(unsplit_df=None,
     unsplit_df - unsplit dataframe that will be split into test/train
     train_df - pre-split training dataframe
     test_df - pre-split test dataframe
-    split_dataframe - boolean to tell the function to split the unsplit dataframe into test/train or not. 
+    split_dataframe - boolean to tell the function to split the unsplit dataframe into test/train or not.
         Use with holdout data.
     fitted_scaler - give the function a prefitted scaler that it will use on the data.
     time_window (default=5) - time series length
@@ -178,13 +178,13 @@ def full_dataset_randomised_arrays(unsplit_df=None,
     check_outliers (default=False) - controls whether it checks each window for outliers or not
     input_cols (default = 'RSI', 'Stochastic', 'Stochastic_signal', 'ADI',
        'OBV', 'ATR', 'ADX', 'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff',
-       'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return']) - all input features, that should 
-       be included in the input array target_col (default = '5TD_return') - target variable, first 
+       'MACD_signal', '1D_past_return', '5D_past_return', '10D_past_return']) - all input features, that should
+       be included in the input array target_col (default = '5TD_return') - target variable, first
        (newest) value for each input array
     target_col - all columns that should be included in target_col
         (default: target_col=['1D_past_return', '5D_past_return', '10D_past_return'])
     outlier_validation - a dict that sets the outlier checks to be completed. Enter data in the format:
-        outlier_validation={'column_name': [lower_threshold, upper_threshold]} 
+        outlier_validation={'column_name': [lower_threshold, upper_threshold]}
         Example: {'Stochastic': [0, 100], 'Stochastic_signal': [-10, 110], '5D_past_return': [-0.5, 0.5]}
 
     Return tuple (input_array, target_array).
@@ -192,13 +192,13 @@ def full_dataset_randomised_arrays(unsplit_df=None,
     input_array dim: (number_of_samples x time_window x features_number)
     target_array dim: (number_of_samples x time_window x returns_numbder)
     """
-    
+
     ## check to see if unsplit or train/test split dataframes provided
     if unsplit_df is not None:
         df = unsplit_df.copy()
-        if split_dataframe == True: 
+        if split_dataframe == True:
             print('Train/Test Split: Splitting unsplit dataframe')
-            train_set, test_set = train_test_split_multiple_companies(unsplit_df, '3Y')
+            train_set, test_set = train_test_split_multiple_companies(unsplit_df, test_set_size)
         else:
             print('Train/Test Split: Not splitting dataframe. (Holdout Data)')
             train_set= df
@@ -206,16 +206,16 @@ def full_dataset_randomised_arrays(unsplit_df=None,
         print('Train/Test Split: Using provided train/test split dataframe')
         df = train_df.copy()
         train_set = train_df.copy()
-        test_set = test_df.copy()  
+        test_set = test_df.copy()
     else:
         print('''
-        Please enter valid input dataframes. Either: 
-        --> Enter a unsplit dataframe (unsplit_df=df), or 
+        Please enter valid input dataframes. Either:
+        --> Enter a unsplit dataframe (unsplit_df=df), or
         --> Enter pre-split train and test dataframes (train_df=train and test_df=test)
         ''')
         return None, None, None, None, None
-        
-    
+
+
     ## check to see if fitted scaler provided
     if fitted_scaler == None:
         print('Scaler: Fitting scaler on train set')
@@ -223,7 +223,7 @@ def full_dataset_randomised_arrays(unsplit_df=None,
     else:
         print('Scaler: Using provided fitted_scaler')
         scaler = fitted_scaler
-    
+
     train_x = []
     train_y = []
     test_x = []
@@ -241,7 +241,7 @@ def full_dataset_randomised_arrays(unsplit_df=None,
         test_outlier_count = 0
         company_train_x_array = []
         company_train_y_array = []
-        
+
         company_test_x_array = []
         company_test_y_array = []
 
@@ -254,9 +254,9 @@ def full_dataset_randomised_arrays(unsplit_df=None,
             df_slice = company_train_sorted.iloc[row: row + time_window].copy()
             ## check for outliers
             if check_train_outliers == True:
-                for k, v in outlier_validation.items(): 
+                for k, v in outlier_validation.items():
                     if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
-                
+
             if df_slice.shape[0]==time_window and outlier==False:
                 ## scale the window
                 df_slice.loc[:, input_cols] = scaler.transform(df_slice[input_cols])
@@ -264,15 +264,15 @@ def full_dataset_randomised_arrays(unsplit_df=None,
                 company_train_x_array.append(np.array(df_slice[input_cols].values))
                 company_train_y_array.append(np.array(df_slice[target_col].iloc[0]))
             else: train_outlier_count+=1
-        
+
         if train_outlier_count/(len(company_train_sorted)/stride) <= outlier_threshold:
             stats[ticker]['train_possible_windows'] = (len(company_train_sorted)/stride)
             stats[ticker]['train_outliers'] = train_outlier_count
             stats[ticker]['train_windows'] = len(company_train_x_array)
             train_x.extend(company_train_x_array)
             train_y.extend(company_train_y_array)
-            
-        
+
+
         ## test
         if split_dataframe == True:
             company_test_df = test_set[test_set['ticker'] == ticker]
@@ -283,7 +283,7 @@ def full_dataset_randomised_arrays(unsplit_df=None,
                 df_slice = company_test_sorted.iloc[row: row + time_window].copy()
                 ## check for outliers
                 if check_test_outliers == True:
-                    for k, v in outlier_validation.items(): 
+                    for k, v in outlier_validation.items():
                         if ((df_slice[k] < v[0]).any() == True) or ((df_slice[k] > v[1]).any() == True): outlier = True
 
                 if df_slice.shape[0]==time_window and outlier==False:
@@ -300,11 +300,11 @@ def full_dataset_randomised_arrays(unsplit_df=None,
                 stats[ticker]['test_windows'] = len(company_test_x_array)
                 test_x.extend(company_test_x_array)
                 test_y.extend(company_test_y_array)
-    
+
     print('All Companies Completed')
     print('')
     ##print('Processing Stats:', stats)
-    
+
     ## shuffle arrays
     output_train_x = []
     output_train_y = []
