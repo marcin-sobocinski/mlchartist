@@ -137,22 +137,15 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, o
         else: outlier_count+=1  
     return np.array(input_array), np.array(target_array)
 
-from mlchartist.preprocessing import train_test_split
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-
-from mlchartist.preprocessing import train_test_split
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-import random
-import pandas as pd
-import numpy as np
 
 def full_dataset_randomised_arrays(unsplit_df=None,
                                        train_df=None,
                                        test_df=None,
                                        split_dataframe=True,
-                                         test_set_size='3Y', 
+                                         test_set_size=500, 
                                          time_window=5, 
-                                         stride=3, 
+                                         stride=3,
+                                         verbose=True, 
                                          fitted_scaler=None,
                                          check_train_outliers=False, 
                                          check_test_outliers=False, 
@@ -197,13 +190,13 @@ def full_dataset_randomised_arrays(unsplit_df=None,
     if unsplit_df is not None:
         df = unsplit_df.copy()
         if split_dataframe == True: 
-            print('Train/Test Split: Splitting unsplit dataframe')
+            if verbose: print('Train/Test Split: Splitting unsplit dataframe')
             train_set, test_set = train_test_split_multiple_companies(unsplit_df, test_set_size)
         else:
-            print('Train/Test Split: Not splitting dataframe. (Holdout Data)')
+            if verbose: print('Train/Test Split: Not splitting dataframe. (Holdout Data)')
             train_set= df
     elif (train_df is not None) and (test_df is not None):
-        print('Train/Test Split: Using provided train/test split dataframe')
+        if verbose: print('Train/Test Split: Using provided train/test split dataframe')
         df = train_df.copy()
         train_set = train_df.copy()
         test_set = test_df.copy()  
@@ -218,25 +211,24 @@ def full_dataset_randomised_arrays(unsplit_df=None,
     
     ## check to see if fitted scaler provided
     if fitted_scaler == None:
-        print('Scaler: Fitting scaler on train set')
+        if verbose: print('Scaler: Fitting scaler on train set')
         scaler = fit_train_scaler(train_set, outlier_validation=outlier_validation, input_cols=input_cols)
     else:
-        print('Scaler: Using provided fitted_scaler')
+        if verbose: print('Scaler: Using provided fitted_scaler')
         scaler = fitted_scaler
     
     train_x = []
     train_y = []
     test_x = []
     test_y = []
-    stats2 = []
     stats = {}
     ## go company by company
-    print(f"{df['ticker'].unique().size} Companies in Dataset")
+    if verbose: print(f"{df['ticker'].unique().size} Companies in Dataset")
     status_count = 0
     for ticker in df['ticker'].unique():
         status_count +=1
         stats[ticker] = {}
-        print(f"Starting {ticker}: Company {status_count} of {df['ticker'].unique().size}")
+        if verbose: print(f"Starting {ticker}: Company {status_count} of {df['ticker'].unique().size}")
         train_outlier_count = 0
         test_outlier_count = 0
         company_train_x_array = []
@@ -301,8 +293,8 @@ def full_dataset_randomised_arrays(unsplit_df=None,
                 test_x.extend(company_test_x_array)
                 test_y.extend(company_test_y_array)
     
-    print('All Companies Completed')
-    print('')
+    if verbose: print('All Companies Completed')
+    if verbose: print('')
     ##print('Processing Stats:', stats)
     
     ## shuffle arrays
@@ -354,4 +346,4 @@ def generate_test_window(test_df=None,
     df_slice.loc[:, input_cols] = fitted_scaler.transform(df_slice[input_cols])
     X_array = np.array(df_slice[input_cols].values)
     y_array = np.array(df_slice[target_col].iloc[0])
-    return X_array, y_array
+    return np.array([X_array]), np.array([y_array])
