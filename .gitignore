@@ -12,3 +12,6 @@ groupama/data/base_pno.*
 raw_data/
 raw_data/
 mlchartist.egg-info/
+.aws/
+*.egg-info/
+config.py
