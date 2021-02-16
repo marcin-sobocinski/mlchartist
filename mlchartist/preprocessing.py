@@ -160,6 +160,7 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
 
     INPUT: dataframe with '5TD_return', '10TD_return' and '20TD_return' columns
     OUTPUT: dataframe with binary encoded aforementionned columns
+            '5D_return_bin', '10D_return_bin' and '20D_return_bin'
 
     If the thresolds returns are the same on a yearly basis for the different period use:
                 r10d = r5d * 2
@@ -174,9 +175,9 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
         r10d = r5d * 2
         r20d = r10d * 2
 
-    wk_df['5TD_return'] = wk_df['5TD_return'].apply(lambda x: 1 if x > r5d else 0)
-    wk_df['10TD_return'] = wk_df['10TD_return'].apply(lambda x: 1 if x > r10d else 0)
-    wk_df['20TD_return'] = wk_df['20TD_return'].apply(lambda x: 1 if x > r20d else 0)
+    wk_df['5D_return_bin'] = wk_df['5TD_return'].apply(lambda x: 1 if x > r5d else 0)
+    wk_df['10D_return_bin'] = wk_df['10TD_return'].apply(lambda x: 1 if x > r10d else 0)
+    wk_df['20D_return_bin'] = wk_df['20TD_return'].apply(lambda x: 1 if x > r20d else 0)
 
     return wk_df
 
