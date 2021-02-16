@@ -116,18 +116,17 @@ def calculate_past_returns(df):
 def train_test_split(input_df, test_set_size):
     """
     Split the preprocessed stock data file into a train and test dataset
-    INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
+    INPUT: the dataframe to be split, and size of the test set in the number of rows
     OUTPUT: returns a train_set and test_set dataframe, index is set to the date
 
-    EXAMPLE: train_set, test_set = train_test_split(input_df, '3Y')  --> puts last 3 years in test_set
+    EXAMPLE: train_set, test_set = train_test_split(input_df, 500) 
     """
     df = input_df.copy()
     if not np.issubdtype(df['date'].dtype, np.datetime64):
         df['date'] = pd.to_datetime(df['date'], format=('%Y-%m-%d'))
-    test_set = df.sort_values(by="date",ascending=True).set_index("date").last(test_set_size)
-    train_set = df.drop(df.tail(len(test_set)).index).set_index("date")
-    test_set.reset_index(inplace=True)
-    train_set.reset_index(inplace=True)
+    df = df.sort_values(by="date",ascending=False)
+    test_set = df.iloc[0: test_set_size].copy()
+    train_set = df.iloc[test_set_size: ].copy()
     return train_set, test_set
 
 def returns_classification(return_column, returns_threshold):
@@ -160,6 +159,7 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
 
     INPUT: dataframe with '5TD_return', '10TD_return' and '20TD_return' columns
     OUTPUT: dataframe with binary encoded aforementionned columns
+            '5D_return_bin', '10D_return_bin' and '20D_return_bin'
 
     If the thresolds returns are the same on a yearly basis for the different period use:
                 r10d = r5d * 2
@@ -174,9 +174,9 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
         r10d = r5d * 2
         r20d = r10d * 2
 
-    wk_df['5TD_return'] = wk_df['5TD_return'].apply(lambda x: 1 if x > r5d else 0)
-    wk_df['10TD_return'] = wk_df['10TD_return'].apply(lambda x: 1 if x > r10d else 0)
-    wk_df['20TD_return'] = wk_df['20TD_return'].apply(lambda x: 1 if x > r20d else 0)
+    wk_df['5D_return_bin'] = wk_df['5TD_return'].apply(lambda x: 1 if x > r5d else 0)
+    wk_df['10D_return_bin'] = wk_df['10TD_return'].apply(lambda x: 1 if x > r10d else 0)
+    wk_df['20D_return_bin'] = wk_df['20TD_return'].apply(lambda x: 1 if x > r20d else 0)
 
     return wk_df
 
@@ -201,10 +201,10 @@ def fit_train_scaler(train_df,
 def train_test_split_multiple_companies(df, test_set_size):
     """
     Split the preprocessed stock data of multiple companies into a train and test dataset
-    INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
+    INPUT: the dataframe to be split, and size of the test set in number of rows
     OUTPUT: returns a train_set and test_set dataframe, index is set to the date
 
-    EXAMPLE: train_set, test_set = train_test_split_multiple_companies(input_df, '3Y')  --> puts last 3 years in test_set
+    EXAMPLE: train_set, test_set = train_test_split_multiple_companies(input_df, 500) 
     """
     train_set = pd.DataFrame()
     test_set = pd.DataFrame()
