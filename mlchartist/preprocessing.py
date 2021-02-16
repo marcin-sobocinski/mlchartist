@@ -116,19 +116,17 @@ def calculate_past_returns(df):
 def train_test_split(input_df, test_set_size):
     """
     Split the preprocessed stock data file into a train and test dataset
-    INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
+    INPUT: the dataframe to be split, and size of the test set in the number of rows
     OUTPUT: returns a train_set and test_set dataframe, index is set to the date
 
-    EXAMPLE: train_set, test_set = train_test_split(input_df, '3Y')  --> puts last 3 years in test_set
+    EXAMPLE: train_set, test_set = train_test_split(input_df, 500) 
     """
     df = input_df.copy()
     if not np.issubdtype(df['date'].dtype, np.datetime64):
         df['date'] = pd.to_datetime(df['date'], format=('%Y-%m-%d'))
-    df = df.sort_values(by="date",ascending=True).set_index("date")
-    test_set = df.last(test_set_size)
-    train_set = df.drop(df.tail(len(test_set)).index)
-    test_set.reset_index(inplace=True)
-    train_set.reset_index(inplace=True)
+    df = df.sort_values(by="date",ascending=False)
+    test_set = df.iloc[0: test_set_size].copy()
+    train_set = df.iloc[test_set_size: ].copy()
     return train_set, test_set
 
 def returns_classification(return_column, returns_threshold):
@@ -202,10 +200,10 @@ def fit_train_scaler(train_df,
 def train_test_split_multiple_companies(df, test_set_size):
     """
     Split the preprocessed stock data of multiple companies into a train and test dataset
-    INPUT: the dataframe to be split, and size of the test set in months or years ('3M' or '2Y')
+    INPUT: the dataframe to be split, and size of the test set in number of rows
     OUTPUT: returns a train_set and test_set dataframe, index is set to the date
 
-    EXAMPLE: train_set, test_set = train_test_split_multiple_companies(input_df, '3Y')  --> puts last 3 years in test_set
+    EXAMPLE: train_set, test_set = train_test_split_multiple_companies(input_df, 500) 
     """
     train_set = pd.DataFrame()
     test_set = pd.DataFrame()

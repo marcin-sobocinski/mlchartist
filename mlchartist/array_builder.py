@@ -137,20 +137,12 @@ def build_randomised_arrays(df, time_window=5, stride=3, check_outliers=False, o
         else: outlier_count+=1  
     return np.array(input_array), np.array(target_array)
 
-from mlchartist.preprocessing import train_test_split
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-
-from mlchartist.preprocessing import train_test_split
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-import random
-import pandas as pd
-import numpy as np
 
 def full_dataset_randomised_arrays(unsplit_df=None,
                                        train_df=None,
                                        test_df=None,
                                        split_dataframe=True,
-                                         test_set_size='3Y', 
+                                         test_set_size=500, 
                                          time_window=5, 
                                          stride=3,
                                          verbose=True, 
