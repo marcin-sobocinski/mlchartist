@@ -125,7 +125,7 @@ def train_test_split(input_df, test_set_size):
     if not np.issubdtype(df['date'].dtype, np.datetime64):
         df['date'] = pd.to_datetime(df['date'], format=('%Y-%m-%d'))
     df = df.sort_values(by="date",ascending=True).set_index("date")
-    test_set = df.last('3Y')
+    test_set = df.last(test_set_size)
     train_set = df.drop(df.tail(len(test_set)).index)
     test_set.reset_index(inplace=True)
     train_set.reset_index(inplace=True)
