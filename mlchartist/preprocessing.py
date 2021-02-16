@@ -39,7 +39,7 @@ def proper_col(df):
     Remove '.US' from ticker col, returns cleaned df
     """
     clean_df = df.copy()
-    clean_df['ticker'] = clean_df['ticker'].str.rstrip('.US')
+    clean_df['ticker'] = clean_df['ticker'].str[:-3]
     return clean_df
 
 # Target variable calculations
@@ -180,10 +180,10 @@ def thresholds_encoding(df, r5d=0.0006, same_thresholds=True, r10d=0.0012, r20d=
 
     return wk_df
 
-def fit_train_scaler(train_df, 
+def fit_train_scaler(train_df,
                     outlier_validation={'5TD_return': [-0.5, 0.5]},
-                    input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX', 
-                                    'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '5TD_return', 
+                    input_cols=['RSI', 'Stochastic', 'Stochastic_signal', 'ADI','OBV', 'ATR', 'ADX',
+                                    'ADX_pos', 'ADX_neg', 'MACD', 'MACD_diff', 'MACD_signal', '5TD_return',
                                     '10TD_return', '20TD_return']):
     """
     Fits Robust Scaler on train set and returns the scaler
@@ -192,7 +192,7 @@ def fit_train_scaler(train_df,
     OUTPUT: fitted scaler
     """
     no_outlier_train_df = train_df.copy()
-    for k, v in outlier_validation.items(): 
+    for k, v in outlier_validation.items():
         no_outlier_train_df = no_outlier_train_df[no_outlier_train_df[k].between(v[0], v[1])]
     scaler = RobustScaler()
     scaler.fit(no_outlier_train_df[input_cols])

@@ -354,4 +354,4 @@ def generate_test_window(test_df=None,
     df_slice.loc[:, input_cols] = fitted_scaler.transform(df_slice[input_cols])
     X_array = np.array(df_slice[input_cols].values)
     y_array = np.array(df_slice[target_col].iloc[0])
-    return X_array, y_array
+    return np.array([X_array]), np.array([y_array])
