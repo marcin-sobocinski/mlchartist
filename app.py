@@ -8,7 +8,6 @@ from flask import request
 from flask_cors import CORS
 from termcolor import colored
 
-from TaxiFareModel.gcp import download_model
 
 app = Flask(__name__)
 CORS(app)

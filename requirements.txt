@@ -10,3 +10,9 @@ yapf
 python-gitlab
 twine
 ta
+flask==1.1.1
+flask-cors
+gunicorn
+google-cloud-storage==1.26.0
+scikit-learn
+termcolor
