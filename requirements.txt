@@ -10,3 +10,6 @@ yapf
 python-gitlab
 twine
 ta
+numpy
+glob
+random
