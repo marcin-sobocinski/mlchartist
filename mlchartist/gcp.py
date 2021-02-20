@@ -1,6 +1,7 @@
 from google.cloud import storage
 from io import BytesIO
 import pandas as pd
+import configparser
 
 from mlchartist.params import BUCKET_NAME, MODEL_NAME, BUCKET_PREPROCESSED_FOLDER, MODEL_VERSION
 
@@ -39,5 +40,11 @@ def load_file_from_gcp(bucket_name=BUCKET_NAME, source_blob_name=None, credentia
     content = blob.download_as_string()
     df = pd.read_csv(BytesIO(content))
     return df
+
+def load_gcp_credentials(config_path='config/credentials.ini'):
+    config = configparser.ConfigParser()
+    config.read(config_path)
+    gcp_path = config['gcp']['credentials_path']
+    return gcp_path
 
 

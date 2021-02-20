@@ -1,3 +1,81 @@
+### GCP configuration - - - - - - - - - - - - - - - - - - -
+
+# /!\ you should fill these according to your account
+
+### GCP Project - - - - - - - - - - - - - - - - - - - - - -
+
+# not required here
+
+### GCP Storage - - - - - - - - - - - - - - - - - - - - - -
+
+BUCKET_NAME=mlchartist-project
+
+##### Data  - - - - - - - - - - - - - - - - - - - - - - - -
+
+# not required here
+
+##### Training  - - - - - - - - - - - - - - - - - - - - - -
+
+# will store the packages uploaded to GCP for the training
+BUCKET_TRAINING_FOLDER=trainings
+
+##### Model - - - - - - - - - - - - - - - - - - - - - - - -
+
+# not required here
+
+### GCP AI Platform - - - - - - - - - - - - - - - - - - - -
+
+##### Machine configuration - - - - - - - - - - - - - - - -
+
+REGION=europe-west1
+
+PYTHON_VERSION=3.7
+FRAMEWORK=scikit-learn
+RUNTIME_VERSION=1.15
+
+##### Package params  - - - - - - - - - - - - - - - - - - -
+
+PACKAGE_NAME=mlchartist
+MODEL_TRAINER_FILENAME=trainer
+BUILD_ARRAYS_FILENAME=build_arrays_pipeline
+
+##### Job - - - - - - - - - - - - - - - - - - - - - - - - -
+
+BUILD_ARRAYS_JOB_NAME=mlchartist_build_arrays_pipeline_$(shell date +'%Y%m%d_%H%M%S')
+MODEL_TRAINER_JOB_NAME=mlchartist_model_trainer_$(shell date +'%Y%m%d_%H%M%S')
+
+# ----------------------------------
+#          RUN TRAINING
+# ----------------------------------
+
+run_build_arrays_locally:
+	@python -m ${PACKAGE_NAME}.${BUILD_ARRAYS_FILENAME}
+
+
+run_model_trainer_locally:
+	@python -m ${PACKAGE_NAME}.${MODEL_TRAINER_FILENAME}
+
+
+gcp_submit_build_arrays:
+	gcloud ai-platform jobs submit training ${BUILD_ARRAYS_JOB_NAME} \
+		--job-dir gs://${BUCKET_NAME}/${BUCKET_TRAINING_FOLDER} \
+		--package-path ${PACKAGE_NAME} \
+		--module-name ${PACKAGE_NAME}.${BUILD_ARRAYS_FILENAME} \
+		--python-version=${PYTHON_VERSION} \
+		--runtime-version=${RUNTIME_VERSION} \
+		--region ${REGION} \
+		--stream-logs
+
+gcp_submit_model_training:
+	gcloud ai-platform jobs submit training ${MODEL_TRAINER_JOB_NAME} \
+		--job-dir gs://${BUCKET_NAME}/${BUCKET_TRAINING_FOLDER} \
+		--package-path ${PACKAGE_NAME} \
+		--module-name ${PACKAGE_NAME}.${MODEL_TRAINER_FILENAME} \
+		--python-version=${PYTHON_VERSION} \
+		--runtime-version=${RUNTIME_VERSION} \
+		--region ${REGION} \
+		--stream-logs
+
 # ----------------------------------
 #          INSTALL & TEST
 # ----------------------------------

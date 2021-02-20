@@ -11,5 +11,7 @@ python-gitlab
 twine
 ta
 numpy
-glob
 random
+configparser
+sklearn
+io
