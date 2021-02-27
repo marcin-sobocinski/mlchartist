@@ -2,6 +2,7 @@ from google.cloud import storage
 from io import BytesIO
 import pandas as pd
 import configparser
+import os
 
 from mlchartist.params import BUCKET_NAME, MODEL_NAME, BUCKET_PREPROCESSED_FOLDER, MODEL_VERSION
 
@@ -48,3 +49,16 @@ def load_gcp_credentials(config_path='config/credentials.ini'):
     return gcp_path
 
 
+def upload_model_gcp(model_version=MODEL_VERSION, bucket_name=BUCKET_NAME, rm=False, credentials_path=None):
+    if credentials_path is not None:
+            storage_client = storage.Client.from_service_account_json(credentials_path)
+    else:
+        storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    model = 'models/test_model.joblib'
+    destination_blob_name = f'models/{MODEL_NAME}/versions/{model_version}/{model}.joblib'
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(model)
+    print(f"Model {model} uploaded to {destination_blob_name}")
+    if rm:
+        os.remove('models/test_model.joblib')

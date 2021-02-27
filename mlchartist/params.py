@@ -27,7 +27,7 @@ BUCKET_PREPROCESSED_FOLDER = 'nasdaq_100_processed'
 MODEL_NAME = 'mlchartist'
 
 # model version folder name (where the trained model.joblib file will be stored)
-MODEL_VERSION = 'trained_models'
+MODEL_VERSION = 'model_18_02'
 
 ### GCP AI Platform - - - - - - - - - - - - - - - - - - - -
 

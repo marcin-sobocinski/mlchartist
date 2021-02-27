@@ -35,13 +35,13 @@ if __name__ == "__main__":
     ##warnings.simplefilter(action='ignore', category=FutureWarning)
     # Get and clean data
     experiment = "mlchartist_set_YOURNAME"
-    gcp_details = load_gcp_credentials()
+    #gcp_details = load_gcp_credentials()
     data_params = dict(nrows=10000, 
                         local=False, 
-                        ticker_list=['AAPL', 'TSLA'], 
+                        ticker_list=None, 
                         min_length=500, 
-                        nasdaq100=False, 
-                        gcp_credentials_path=gcp_details)
+                        nasdaq100=True, 
+                        gcp_credentials_path=None)
     print("############   Loading Data   ############")
     df = load_processed_data(**data_params)
 

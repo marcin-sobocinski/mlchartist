@@ -18,7 +18,8 @@ REQUIRED_PACKAGES = [
     'pygeohash==1.2.0',
     'termcolor==1.1.0',
     'memoized-property==1.0.3',
-    'scikit-learn==0.23.2'
+    'scikit-learn==0.23.2',
+    'ta==0.7.0'
 ]
 
 
@@ -29,7 +30,7 @@ setup(name='mlchartist',
       install_requires=REQUIRED_PACKAGES,
       packages=find_packages(),
       test_suite = 'tests',
-      # include_package_data: to install data from MANIFEST.in
+      ##include_package_data: to install data from MANIFEST.in
       include_package_data=True,
       scripts=['scripts/mlchartist-run'],
       zip_safe=False)

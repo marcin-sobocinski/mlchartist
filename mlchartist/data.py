@@ -14,7 +14,8 @@ def load_processed_data(nrows=10000, local=False, ticker_list=None, min_length=5
             nasdaq100_list_filepath='raw_data/nasdaq100.csv', processed_csvs_filepath='raw_data/processed/'):
     joined_df = pd.DataFrame()
     if ticker_list is None and nasdaq100 == True:
-        ticker_list = pd.read_csv(nasdaq100_list_filepath, header=None)
+        if local == True:  ticker_list = pd.read_csv(nasdaq100_list_filepath, header=None)
+        if local == False: ticker_list = load_file_from_gcp(bucket_name='mlchartist-project', source_blob_name='nasdaq100.csv', credentials_path=gcp_credentials_path)
         ticker_list = list(ticker_list.values.flatten())
 
     ## load from local machine
